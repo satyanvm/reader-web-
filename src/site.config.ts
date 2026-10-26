@@ -35,7 +35,7 @@ export const site = {
   tagline: 'A calm place to read PDFs and EPUBs, in sync across your devices.',
   description:
     'Readserene is a calm, distraction-free reader for PDFs and EPUBs that remembers exactly where you stopped, on every device you sign in to.',
-  url: 'https://readserene.pages.dev', // TODO: confirm production domain
+  url: 'https://readserene.site',
   contactEmail,
   githubUrl: 'https://github.com/satyanvm', // TODO: confirm GitHub link
   launchYear: 2026,
@@ -56,24 +56,26 @@ export const site = {
       name: 'Android',
       heroLabel: 'Get it on Android',
       available: true,
-      url: 'https://example.com/readserene-android', // TODO: Google Play listing URL
-      label: 'Get it on Google Play',
-      alt: { label: 'Download APK', url: 'https://example.com/readserene.apk' }, // TODO: APK URL
+      // GitHub Releases on reader-android; "latest" follows each new release.
+      url: 'https://github.com/satyanvm/reader-android/releases/latest/download/Readserene-android.apk',
+      label: 'Download APK',
       minOS: 'Android 8+',
-      version: '1.0.0', // TODO: confirm
-      size: '18 MB', // TODO: confirm
+      version: '0.6.2',
+      size: '17.8 MB',
     },
     {
       id: 'mac',
       name: 'Mac',
       heroLabel: 'Download for Mac',
       available: true,
-      url: 'https://example.com/readserene.dmg', // TODO: real .dmg URL
+      // GitHub Releases on reader-mac; "latest" follows each new release.
+      url: 'https://github.com/satyanvm/reader-mac/releases/latest/download/Readserene-mac.dmg',
       label: 'Download .dmg',
       minOS: 'macOS 14+',
-      version: '1.0.0', // TODO: confirm
-      size: '24 MB', // TODO: confirm
-      note: 'Requires macOS 14 or later. Apple silicon and Intel.',
+      version: '1.0',
+      size: '2.1 MB',
+      // Until the app is notarized with an Apple Developer ID, macOS blocks the first launch.
+      note: 'Requires macOS 14 or later. Apple silicon and Intel. The first time you open it, macOS may block it: open System Settings → Privacy & Security and click Open Anyway.',
     },
     {
       id: 'windows',
@@ -98,12 +100,12 @@ export const site = {
   ] satisfies Platform[],
 
   pricing: {
-    pricingIsPlaceholder: true,
+    pricingIsPlaceholder: false,
     currency: 'USD',
     symbol: '$',
     free: {
       name: 'Free',
-      price: 0, // TODO: confirm
+      price: 0,
       caption: 'forever',
       features: [
         'Read any PDF or EPUB on one device',
@@ -114,9 +116,9 @@ export const site = {
       ],
     },
     sync: {
-      name: 'Readserene Sync',
-      monthly: 2, // TODO: confirm
-      yearly: 18, // TODO: confirm
+      name: 'Pro',
+      monthly: 9,
+      yearly: 72,
       recommended: true,
       features: [
         'Everything in Free',
@@ -152,7 +154,7 @@ export const site = {
     },
     {
       q: 'How do I cancel?',
-      a: `You can cancel Readserene Sync at any time from your account, or email ${contactEmail} and we will do it for you. Your books stay on your device and you can keep reading with the Free plan.`,
+      a: `You can cancel Pro at any time: email ${contactEmail} and we will do it for you. Your books stay on your device and you can keep reading with the Free plan.`,
     },
     {
       q: 'Can I export my data?',
