@@ -3,3 +3,12 @@ dist/
 .astro/
 .wrangler/
 .DS_Store
+
+# Secrets: never commit these. Server secrets live in Cloudflare
+# (`npx wrangler secret put ...`), not in files.
+.env
+.env.*
+.dev.vars
+*.jks
+*.keystore
+*.pem
