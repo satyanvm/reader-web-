@@ -1,0 +1,72 @@
+---
+import Base from '../layouts/Base.astro';
+import PasswordField from '../components/PasswordField.astro';
+import CodeStep from '../components/CodeStep.astro';
+import GoogleButton from '../components/GoogleButton.astro';
+import { site } from '../site.config';
+---
+
+<Base title={`Sign in · ${site.name}`} description={`Sign in to your ${site.name} account.`} path="/signin">
+  <section class="auth">
+    <div class="container">
+      <div class="auth-card" data-auth-page="signin">
+        <div data-step="form">
+          <h1 tabindex="-1">Sign in</h1>
+          <p class="lead">Use the same account as in the {site.name} app.</p>
+          <GoogleButton />
+          <form novalidate>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </div>
+            <PasswordField id="password" label="Password" autocomplete="current-password">
+              <a slot="label-extra" href="/reset" data-forgot hidden>Forgot password?</a>
+            </PasswordField>
+            <p class="form-error" role="alert" hidden></p>
+            <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+          </form>
+          <p class="auth-foot">New to {site.name}? <a href="/signup" data-keep-next>Create an account</a></p>
+        </div>
+        <CodeStep />
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { api, busy, clearError, finishSignIn, getProviders, keepNext, markInvalid, mountGoogle, showError, showStep, wireCodeStep, wirePasswordToggles } from '../scripts/auth';
+
+  const root = document.querySelector<HTMLElement>('[data-auth-page="signin"]')!;
+  const form = root.querySelector<HTMLFormElement>('[data-step="form"] form')!;
+  const email = form.querySelector<HTMLInputElement>('#email')!;
+  const password = form.querySelector<HTMLInputElement>('#password')!;
+  const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+  wirePasswordToggles(root);
+  keepNext(root);
+  const code = wireCodeStep(root, () => showStep(root, 'form'));
+  mountGoogle(root.querySelector('[data-google]'), (msg) => showError(form, msg));
+  getProviders().then((p) => {
+    root.querySelector<HTMLElement>('[data-forgot]')!.hidden = !p.emailCodes;
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError(form);
+    if (!email.checkValidity()) {
+      showError(form, 'Enter a valid email address.');
+      return markInvalid(email);
+    }
+    if (!password.value) {
+      showError(form, 'Enter your password.');
+      return markInvalid(password);
+    }
+    const r = await busy(submit, () => api('/v1/auth/signin', { email: email.value.trim(), password: password.value }));
+    if (r.ok) return finishSignIn();
+    // An unconfirmed account: the server has just emailed a new code.
+    if (r.data.code === 'verification_required') return code.open(email.value.trim());
+    showError(form, r.data.error);
+    if (r.data.code === 'invalid_email') markInvalid(email);
+    else if (r.data.code === 'invalid_credentials') markInvalid(password);
+  });
+</script>

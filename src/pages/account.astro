@@ -1,0 +1,78 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../site.config';
+---
+
+<Base title={`Your account · ${site.name}`} description={`Your ${site.name} account.`} path="/account" noindex>
+  <section class="auth">
+    <div class="container">
+      <div class="auth-card" data-auth-page="account">
+        <h1 tabindex="-1">Your account</h1>
+        <p class="lead" data-state="loading" role="status">Loading your account…</p>
+
+        <div class="panel" data-state="error" hidden>
+          <p class="form-error" role="alert"></p>
+          <button type="button" class="btn btn-secondary btn-block" data-retry>Try again</button>
+        </div>
+
+        <div class="panel" data-state="ready" hidden>
+          <div class="account-row">
+            <p class="hint">Signed in as</p>
+            <p class="account-email" data-email-out></p>
+          </div>
+          <p>
+            Sign in with this account in the {site.name} app on each of your devices. Your library and reading positions
+            sync between them.
+          </p>
+          <a class="btn btn-primary btn-block" href="/#download">Get the apps</a>
+          <button type="button" class="btn btn-secondary btn-block" data-signout>Sign out</button>
+          <p class="hint">
+            Signing out here doesn’t sign out your devices. To delete your account and its synced data, email <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .account-row {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--band);
+  }
+  .account-email {
+    color: var(--ink);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+</style>
+
+<script>
+  import { api, busy } from '../scripts/auth';
+
+  const root = document.querySelector<HTMLElement>('[data-auth-page="account"]')!;
+  const show = (state: string) =>
+    root.querySelectorAll<HTMLElement>('[data-state]').forEach((el) => (el.hidden = el.dataset.state !== state));
+
+  async function load() {
+    show('loading');
+    const r = await api<{ email?: string }>('/v1/me');
+    if (r.status === 401) return location.replace('/signin?next=/account');
+    if (!r.ok) {
+      root.querySelector('[data-state="error"] .form-error')!.textContent = r.data.error ?? 'Couldn’t load your account.';
+      return show('error');
+    }
+    root.querySelector('[data-email-out]')!.textContent = r.data.email ?? '';
+    show('ready');
+  }
+
+  root.querySelector('[data-retry]')?.addEventListener('click', load);
+  root.querySelector<HTMLButtonElement>('[data-signout]')?.addEventListener('click', async (e) => {
+    await busy(e.currentTarget as HTMLButtonElement, () => api('/v1/auth/signout', {}));
+    location.assign('/');
+  });
+
+  load();
+</script>

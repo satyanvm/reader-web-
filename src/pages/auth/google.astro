@@ -1,0 +1,56 @@
+---
+// Google sends the visitor back here with an ID token in the URL fragment
+// (see mountGoogle in src/scripts/auth.ts). Register this page's URL as an
+// authorized redirect URI on the Google OAuth client.
+import Base from '../../layouts/Base.astro';
+import { site } from '../../site.config';
+---
+
+<Base title={`Signing in · ${site.name}`} description={`Signing in to ${site.name} with Google.`} path="/auth/google" noindex>
+  <section class="auth">
+    <div class="container">
+      <div class="auth-card" data-auth-page="google">
+        <div data-step="working">
+          <h1 tabindex="-1">Signing you in…</h1>
+          <p class="lead" role="status">Checking your Google account.</p>
+        </div>
+        <div data-step="failed" hidden>
+          <h1 tabindex="-1">Couldn’t sign in with Google</h1>
+          <p class="form-error" role="alert"></p>
+          <div class="panel">
+            <a class="btn btn-primary btn-block" href="/signin">Back to sign in</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { api, idTokenNonce, showStep, takeGoogleState } from '../../scripts/auth';
+
+  const root = document.querySelector<HTMLElement>('[data-auth-page="google"]')!;
+  const params = new URLSearchParams(location.hash.slice(1));
+  // Take the token out of the address bar and history straight away.
+  history.replaceState(null, '', location.pathname);
+
+  const fail = (message: string) => {
+    root.querySelector('[data-step="failed"] .form-error')!.textContent = message;
+    showStep(root, 'failed');
+  };
+
+  async function run() {
+    const saved = takeGoogleState();
+    const idToken = params.get('id_token');
+    if (params.get('error') === 'access_denied') return fail('Google sign-in was cancelled.');
+    if (params.get('error')) return fail('Google couldn’t complete the sign-in. Try again.');
+    if (!saved || !idToken || params.get('state') !== saved.state || idTokenNonce(idToken) !== saved.nonce) {
+      return fail('This sign-in link has expired or didn’t start on this page. Start again from the sign-in page.');
+    }
+    const r = await api('/v1/auth/google', { idToken });
+    if (r.ok) return location.replace(saved.next);
+    fail(r.data.error ?? 'Couldn’t sign in with Google.');
+  }
+
+  run();
+</script>

@@ -1,0 +1,119 @@
+---
+import Base from '../layouts/Base.astro';
+import PasswordField from '../components/PasswordField.astro';
+import { site } from '../site.config';
+---
+
+<Base title={`Reset your password · ${site.name}`} description={`Reset the password for your ${site.name} account.`} path="/reset" noindex>
+  <section class="auth">
+    <div class="container">
+      <div class="auth-card" data-auth-page="reset">
+        <div data-step="request">
+          <h1 tabindex="-1">Reset your password</h1>
+          <p class="lead">Enter your account’s email and we’ll send you a code to set a new password.</p>
+          <form novalidate>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </div>
+            <p class="form-error" role="alert" hidden></p>
+            <button class="btn btn-primary btn-block" type="submit">Send code</button>
+          </form>
+          <p class="auth-foot"><a href="/signin" data-keep-next>Back to sign in</a></p>
+        </div>
+
+        <div data-step="unavailable" hidden>
+          <h1 tabindex="-1">Reset your password</h1>
+          <p class="lead">
+            Password reset by email isn’t switched on yet. Write to <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a> from your account’s address and we’ll help you
+            get back in.
+          </p>
+          <p class="auth-foot"><a href="/signin" data-keep-next>Back to sign in</a></p>
+        </div>
+
+        <div data-step="reset" hidden>
+          <h1 tabindex="-1">Set a new password</h1>
+          <p class="lead">
+            We sent a 6-digit code to <strong data-email-out></strong>. Setting a new password signs you out on your other
+            devices.
+          </p>
+          <form novalidate>
+            <div class="field">
+              <label for="code">Code</label>
+              <input id="code" name="code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required />
+            </div>
+            <PasswordField id="new-password" label="New password" autocomplete="new-password" hint="At least 8 characters." />
+            <p class="form-error" role="alert" hidden></p>
+            <button class="btn btn-primary btn-block" type="submit">Set password and sign in</button>
+          </form>
+          <p class="auth-foot"><button type="button" class="link-btn" data-back>Use a different email</button></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { api, busy, clearError, finishSignIn, getProviders, keepNext, markInvalid, pendingEmail, showError, showStep, wirePasswordToggles } from '../scripts/auth';
+
+  const root = document.querySelector<HTMLElement>('[data-auth-page="reset"]')!;
+  const requestForm = root.querySelector<HTMLFormElement>('[data-step="request"] form')!;
+  const resetForm = root.querySelector<HTMLFormElement>('[data-step="reset"] form')!;
+  const email = requestForm.querySelector<HTMLInputElement>('#email')!;
+  const code = resetForm.querySelector<HTMLInputElement>('#code')!;
+  const password = resetForm.querySelector<HTMLInputElement>('#new-password')!;
+  let address = '';
+
+  wirePasswordToggles(root);
+  keepNext(root);
+  email.value = pendingEmail.get();
+  getProviders().then((p) => {
+    if (!p.emailCodes) showStep(root, 'unavailable');
+  });
+
+  code.addEventListener('input', () => {
+    code.value = code.value.replace(/\D/g, '').slice(0, 6);
+  });
+
+  requestForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError(requestForm);
+    if (!email.checkValidity()) {
+      showError(requestForm, 'Enter a valid email address.');
+      return markInvalid(email);
+    }
+    address = email.value.trim();
+    const r = await busy(requestForm.querySelector('button[type="submit"]'), () => api('/v1/auth/password/forgot', { email: address }));
+    if (!r.ok) {
+      showError(requestForm, r.data.error);
+      return markInvalid(email);
+    }
+    pendingEmail.set(address);
+    root.querySelectorAll<HTMLElement>('[data-email-out]').forEach((el) => (el.textContent = address));
+    showStep(root, 'reset');
+  });
+
+  resetForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError(resetForm);
+    if (!/^\d{6}$/.test(code.value)) {
+      showError(resetForm, 'Enter the 6-digit code from the email.');
+      return markInvalid(code);
+    }
+    if (password.value.length < 8) {
+      showError(resetForm, 'Use a password of at least 8 characters.');
+      return markInvalid(password);
+    }
+    const r = await busy(resetForm.querySelector('button[type="submit"]'), () =>
+      api('/v1/auth/password/reset', { email: address, code: code.value, password: password.value }),
+    );
+    if (r.ok) {
+      pendingEmail.clear();
+      return finishSignIn();
+    }
+    showError(resetForm, r.data.error);
+    markInvalid(r.data.code === 'weak_password' ? password : code);
+  });
+
+  root.querySelector('[data-back]')?.addEventListener('click', () => showStep(root, 'request'));
+</script>

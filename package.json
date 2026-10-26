@@ -1,0 +1,27 @@
+{
+  "name": "readserene-website",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "assets": "node scripts/generate-images.mjs",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check:launch": "node scripts/check-launch.mjs",
+    "deploy": "node scripts/check-launch.mjs && npm run build && npx wrangler pages deploy dist --project-name readserene"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/literata": "^5.3.0",
+    "astro": "^7.3.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "sharp": "^0.35.5",
+    "wrangler": "^4.151.1"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

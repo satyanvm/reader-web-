@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../site.config';
+---
+
+<Base title={`Page not found · ${site.name}`} description="This page doesn’t exist." path="/404" noindex>
+  <div class="container section">
+    <div class="prose">
+      <p class="eyebrow">404</p>
+      <h1>This page isn’t here.</h1>
+      <p>The link may be old, or the address may have a typo.</p>
+      <p><a class="btn btn-primary" href="/">Back to {site.name}</a></p>
+    </div>
+  </div>
+</Base>

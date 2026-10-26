@@ -1,0 +1,69 @@
+---
+import Base from '../layouts/Base.astro';
+import PasswordField from '../components/PasswordField.astro';
+import CodeStep from '../components/CodeStep.astro';
+import GoogleButton from '../components/GoogleButton.astro';
+import { site } from '../site.config';
+---
+
+<Base title={`Create your account · ${site.name}`} description={`Create a ${site.name} account to keep your library and reading position in sync.`} path="/signup">
+  <section class="auth">
+    <div class="container">
+      <div class="auth-card" data-auth-page="signup">
+        <div data-step="form">
+          <h1 tabindex="-1">Create your account</h1>
+          <p class="lead">One account keeps your library and your place in sync on every device you sign in to.</p>
+          <GoogleButton />
+          <form novalidate>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </div>
+            <PasswordField id="password" label="Password" autocomplete="new-password" hint="At least 8 characters." />
+            <p class="form-error" role="alert" hidden></p>
+            <button class="btn btn-primary btn-block" type="submit">Create account</button>
+            <p class="hint">
+              By creating an account you agree to the <a href="/terms">Terms</a> and the <a href="/privacy">Privacy</a> policy.
+            </p>
+          </form>
+          <p class="auth-foot">Already have an account? <a href="/signin" data-keep-next>Sign in</a></p>
+        </div>
+        <CodeStep />
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { api, busy, clearError, finishSignIn, keepNext, markInvalid, mountGoogle, showError, showStep, wireCodeStep, wirePasswordToggles } from '../scripts/auth';
+
+  const root = document.querySelector<HTMLElement>('[data-auth-page="signup"]')!;
+  const form = root.querySelector<HTMLFormElement>('[data-step="form"] form')!;
+  const email = form.querySelector<HTMLInputElement>('#email')!;
+  const password = form.querySelector<HTMLInputElement>('#password')!;
+  const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+  wirePasswordToggles(root);
+  keepNext(root);
+  const code = wireCodeStep(root, () => showStep(root, 'form'));
+  mountGoogle(root.querySelector('[data-google]'), (msg) => showError(form, msg));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError(form);
+    if (!email.checkValidity()) {
+      showError(form, 'Enter a valid email address.');
+      return markInvalid(email);
+    }
+    if (password.value.length < 8) {
+      showError(form, 'Use a password of at least 8 characters.');
+      return markInvalid(password);
+    }
+    const r = await busy(submit, () => api('/v1/auth/signup', { email: email.value.trim(), password: password.value }));
+    if (r.status === 202) return code.open(email.value.trim());
+    if (r.ok) return finishSignIn();
+    showError(form, r.data.error);
+    if (r.data.code === 'invalid_email' || r.data.code === 'account_exists') markInvalid(email);
+    else if (r.data.code === 'weak_password') markInvalid(password);
+  });
+</script>
