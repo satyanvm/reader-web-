@@ -40,6 +40,10 @@ npm run deploy
 
 `npm run deploy` runs the launch check, builds, and uploads `dist/` with `npx wrangler pages deploy dist --project-name readserene`. The first deploy asks you to sign in to Cloudflare and creates the `readserene` project. To change the project name, edit the `deploy` script in `package.json`.
 
+### Cloudflare Workers Builds
+
+The `readserene` Worker in the Cloudflare dashboard builds from Git with `npm run build` and deploys with `npx wrangler deploy`, which reads `wrangler.jsonc`. It serves `dist/` as static assets (including `_headers` and `404.html`) and runs `server/worker.ts` only for `/api/*`, the same account proxy as the Pages Function. Set `SYNC_API_ORIGIN` under the Worker's variables to override the sync server.
+
 To deploy from Git instead, connect the repository in the Cloudflare dashboard with the build command `npm run build` and output directory `dist`. The `.nvmrc` file tells Pages to build with Node 22. A Git deploy doesn't run the launch check, so run it yourself first.
 
 After the first deploy, add your custom domain under the project's Custom domains tab, and set the same domain as `url` in `src/site.config.ts`.
