@@ -1,9 +1,11 @@
 // Cloudflare Workers Builds deploys the site with `npx wrangler deploy`, which
-// reads this file. Run `npm run build` first so dist/ exists.
+// reads this file. Wrangler runs the build itself, so dist/ exists even when
+// the dashboard has no build command set.
 {
   "name": "readserene",
   "compatibility_date": "2026-10-01",
   "main": "server/worker.ts",
+  "build": { "command": "npm run build" },
   "assets": {
     "directory": "./dist",
     // Unknown paths get dist/404.html with a 404 status, as on Pages.
