@@ -12,5 +12,7 @@
     "not_found_handling": "404-page",
     // Static files never reach the Worker; only the account proxy does.
     "run_worker_first": ["/api/*"]
-  }
+  },
+  // Pull request builds run `npx wrangler preview`, which needs this block.
+  "previews": {}
 }
