@@ -8,6 +8,7 @@ const variants = site.platforms.map((p) => ({
   label: p.available ? p.heroLabel : `Coming soon to ${p.name}`,
   href: p.available ? p.url : `#download-${p.id}`,
   available: p.available,
+  installFor: p.available && p.installSteps ? p.id : undefined,
 }));
 ---
 
@@ -25,6 +26,7 @@ const variants = site.platforms.map((p) => ({
             <a
               class={`btn ${v.available ? 'btn-primary' : 'btn-secondary'} cta-variant`}
               data-for={v.id}
+              data-install-for={v.installFor}
               href={v.href}
             >
               {v.label}
