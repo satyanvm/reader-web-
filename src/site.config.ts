@@ -19,6 +19,11 @@ export interface Platform {
   version?: string;
   size?: string;
   note?: string;
+  /**
+   * Optional steps shown under the download button, and opened after a download
+   * starts, for platforms that don't install the file on their own (e.g. an APK).
+   */
+  installSteps?: string[];
   /** Optional "Notify me" mailto link, shown while the platform is unavailable. */
   notifyUrl?: string;
 }
@@ -62,6 +67,13 @@ export const site = {
       minOS: 'Android 8+',
       version: '0.6.2',
       size: '17.8 MB',
+      // Android browsers save an APK but never open it themselves, so people
+      // need to be told to open it and allow the install.
+      installSteps: [
+        'When the download finishes, tap Open in the download message, or open Readserene-android.apk from your Downloads (Files app).',
+        'If Android says installs from this browser aren’t allowed, tap Settings, turn on Allow from this source, then go back.',
+        'Tap Install. If Play Protect asks about an unrecognised app, tap More details, then Install anyway.',
+      ],
     },
     {
       id: 'mac',
@@ -151,6 +163,10 @@ export const site = {
     {
       q: 'Is there a Windows / iPhone version?',
       a: 'Both are coming soon. Android and Mac are available now. Use “Notify me” in the download section and we will email you when they are ready.',
+    },
+    {
+      q: 'The Android download finished but nothing happened. What now?',
+      a: 'Android saves the app file but doesn’t install it by itself. Open Readserene-android.apk from the download message or from your Downloads (Files app), allow installs from your browser if asked, then tap Install. If you opened the site inside another app such as Gmail, Instagram or WhatsApp, open it in Chrome instead, because those in-app browsers often can’t open downloaded apps.',
     },
     {
       q: 'How do I cancel?',

@@ -48,7 +48,7 @@ const icons: Record<string, string> = {
               <div class="action">
                 {p.available ? (
                   <>
-                    <a class="btn btn-primary" href={p.url}>
+                    <a class="btn btn-primary" href={p.url} data-install-for={p.installSteps && p.id}>
                       {p.label}
                     </a>
                     {p.alt && (
@@ -72,6 +72,17 @@ const icons: Record<string, string> = {
                 )}
               </div>
 
+              {p.available && p.installSteps && (
+                <details id={`install-${p.id}`} class="install small">
+                  <summary>How to install</summary>
+                  <ol>
+                    {p.installSteps.map((step) => (
+                      <li>{step}</li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+
               {(meta || p.note) && (
                 <div class="meta small muted">
                   {meta && <p>{meta}</p>}
@@ -85,6 +96,21 @@ const icons: Record<string, string> = {
     </ul>
   </div>
 </section>
+
+<script>
+  // A download leaves the page where it is and the browser shows no install
+  // prompt, so open the install steps next to the button that was used.
+  document.querySelectorAll<HTMLAnchorElement>('a[data-install-for]').forEach((link) => {
+    link.addEventListener('click', () => {
+      const steps = document.getElementById(`install-${link.dataset.installFor}`);
+      if (!(steps instanceof HTMLDetailsElement)) return;
+      setTimeout(() => {
+        steps.open = true;
+        steps.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    });
+  });
+</script>
 
 <style>
   .cards {
@@ -181,6 +207,23 @@ const icons: Record<string, string> = {
 
   .state.is-available {
     color: var(--accent);
+  }
+
+  .install {
+    margin-top: 16px;
+  }
+
+  .install summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .install ol {
+    margin: 8px 0 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 6px;
   }
 
   .meta {
