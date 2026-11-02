@@ -1,0 +1,19 @@
+// readserene.site runs as the `readserene` Worker: dist/ as static assets, plus
+// server/worker.ts for /api/* and /download/*. Deploy with `npm run deploy`.
+{
+  "name": "readserene",
+  "main": "server/worker.ts",
+  "compatibility_date": "2026-10-19",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*", "/download/*"]
+  },
+  "routes": [
+    { "pattern": "readserene.site", "custom_domain": true },
+    { "pattern": "www.readserene.site", "custom_domain": true }
+  ]
+}

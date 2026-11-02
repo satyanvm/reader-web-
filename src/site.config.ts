@@ -48,6 +48,9 @@ export const site = {
     // Google "Web application" OAuth client id. Also add it to the sync server's
     // GOOGLE_CLIENT_IDS. Empty hides the "Continue with Google" button.
     googleClientId: '', // TODO: add the Google web client id (see README, Google sign-in)
+    // The apps open /app to sign in here; the page hands the sign-in back through this
+    // URL scheme (registered by the Mac app).
+    appScheme: 'readserene',
   },
 
   platforms: [
@@ -56,8 +59,9 @@ export const site = {
       name: 'Android',
       heroLabel: 'Get it on Android',
       available: true,
-      // GitHub Releases on reader-android; "latest" follows each new release.
-      url: 'https://github.com/satyanvm/reader-android/releases/latest/download/Readserene-android.apk',
+      // Served from this site (server/downloads.ts streams the latest GitHub release of
+      // reader-android), so phones never get sent to github.com.
+      url: '/download/Readserene-android.apk',
       label: 'Download APK',
       minOS: 'Android 8+',
       version: '0.6.2',
@@ -68,14 +72,15 @@ export const site = {
       name: 'Mac',
       heroLabel: 'Download for Mac',
       available: true,
-      // GitHub Releases on reader-mac; "latest" follows each new release.
-      url: 'https://github.com/satyanvm/reader-mac/releases/latest/download/Readserene-mac.dmg',
+      // Served from this site too (server/downloads.ts streams the latest GitHub release of reader-mac).
+      url: '/download/Readserene-mac.dmg',
       label: 'Download .dmg',
       minOS: 'macOS 14+',
       version: '1.0',
       size: '2.1 MB',
-      // Until the app is notarized with an Apple Developer ID, macOS blocks the first launch.
-      note: 'Requires macOS 14 or later. Apple silicon and Intel. The first time you open it, macOS may block it: open System Settings → Privacy & Security and click Open Anyway.',
+      // Until the app is notarized with an Apple Developer ID, macOS blocks the first launch;
+      // the download button opens a guide to allowing it (components/MacInstall.astro).
+      note: 'Requires macOS 14 or later. Apple silicon and Intel. Not from the App Store yet, so macOS asks you to allow it once.',
     },
     {
       id: 'windows',

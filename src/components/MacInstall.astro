@@ -1,0 +1,889 @@
+---
+import { site } from '../site.config';
+
+// The Mac app isn't notarized by Apple yet, so macOS blocks its first launch until the
+// visitor allows it in System Settings. Any element with [data-mac-install] opens this
+// dialog: a download link opens it as "your download has started", a plain button as help.
+const steps = [
+  {
+    title: 'Install',
+    text: `Open the downloaded Readserene-mac.dmg and drag ${site.name} into Applications.`,
+  },
+  {
+    title: 'Open it once',
+    text: `Open ${site.name} from Applications. macOS says it can’t verify the app. Click Done.`,
+  },
+  {
+    title: 'Allow it',
+    text: 'Open System Settings → Privacy & Security. Scroll down to Security and click Open Anyway.',
+  },
+  {
+    title: 'Confirm',
+    text: 'Click Open Anyway again and enter your Mac password or use Touch ID. From now on it opens like any other app.',
+  },
+];
+const app = site.name;
+---
+
+<dialog class="mac-install" aria-labelledby="mac-install-title">
+  <div class="inner">
+    <button type="button" class="close" data-close aria-label="Close">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+    </button>
+
+    <p class="eyebrow" data-when="download">Your download has started</p>
+    <p class="eyebrow" data-when="help">Installing on Mac</p>
+    <h2 id="mac-install-title">One extra step the first time you open it</h2>
+    <p class="lead">
+      macOS blocks apps from outside the App Store until you allow them once. Here’s how, in under a minute.
+    </p>
+
+    <div class="stage" aria-hidden="true" data-scene="0">
+      <!-- 1. Drag to Applications -->
+      <div class="scene s1">
+        <div class="win">
+          <div class="bar"><i></i><i></i><i></i><span>{app}</span></div>
+          <div class="dmg">
+            <div class="icon app-icon"><span>R</span></div>
+            <svg class="arrow" viewBox="0 0 60 20"><path d="M2 10h52M46 3l8 7-8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <div class="icon folder"><span>A</span></div>
+          </div>
+          <div class="labels"><span>{app}</span><span>Applications</span></div>
+          <div class="ghost app-icon"><span>R</span></div>
+        </div>
+      </div>
+
+      <!-- 2. The first open is blocked -->
+      <div class="scene s2">
+        <div class="alert">
+          <div class="app-icon small"><span>R</span><b>!</b></div>
+          <p class="a-title">“{app}” Not Opened</p>
+          <p class="a-body">Apple could not verify “{app}” is free of malware…</p>
+          <span class="mbtn primary target">Done</span>
+          <span class="mbtn">Move to Trash</span>
+        </div>
+      </div>
+
+      <!-- 3. System Settings → Privacy & Security → Open Anyway -->
+      <div class="scene s3">
+        <div class="win settings">
+          <div class="side">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <p>General</p>
+            <p>Appearance</p>
+            <p>Desktop &amp; Dock</p>
+            <p class="pick">Privacy &amp; Security</p>
+            <p>Touch ID</p>
+          </div>
+          <div class="pane">
+            <p class="p-title">Privacy &amp; Security</p>
+            <div class="rows">
+              <p class="sec">Security</p>
+              <div class="row">
+                <span>“{app}” was blocked to protect your Mac.</span>
+                <span class="mbtn target">Open Anyway</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Confirm, authenticate, done -->
+      <div class="scene s4">
+        <div class="alert confirm">
+          <div class="app-icon small"><span>R</span></div>
+          <p class="a-title">Open “{app}”?</p>
+          <p class="a-body">You’re choosing to open it anyway.</p>
+          <span class="mbtn primary target">Open Anyway</span>
+          <span class="mbtn">Cancel</span>
+        </div>
+        <div class="alert auth">
+          <svg class="finger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M12 11v3a6 6 0 0 1-1 3.5" /><path d="M8.5 10a3.5 3.5 0 0 1 7 0v2.5" /><path d="M6 8.5A6.5 6.5 0 0 1 18.5 10v2.5a11 11 0 0 1-.8 4" /><path d="M8.5 13.5a8 8 0 0 1-1.5 4.5" /><path d="M15.5 15a9 9 0 0 1-1.6 4.5" /></svg>
+          <p class="a-title">Touch ID or password</p>
+          <p class="a-body">to allow “{app}”</p>
+        </div>
+        <div class="opened">
+          <div class="app-icon"><span>R</span></div>
+          <p>{app} is open</p>
+        </div>
+      </div>
+
+      <div class="cursor">
+        <svg viewBox="0 0 16 22"><path d="M1 1v17l4.5-4.2 3 6.7 2.8-1.3-3-6.6H14L1 1z" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" /></svg>
+        <i class="ripple"></i>
+      </div>
+    </div>
+
+    <ol class="steps">
+      {
+        steps.map((s, i) => (
+          <li>
+            <button type="button" data-step={i} aria-pressed={i === 0 ? 'true' : 'false'}>
+              <span class="num">{i + 1}</span>
+              <span>
+                <strong>{s.title}.</strong> {s.text}
+              </span>
+            </button>
+          </li>
+        ))
+      }
+    </ol>
+
+    <p class="tip small muted">
+      No Open Anyway button? It shows for about an hour after macOS blocks the app. Open {app} again, then go back to
+      Privacy &amp; Security.
+    </p>
+
+    <details class="terminal small">
+      <summary>Prefer Terminal?</summary>
+      <p class="muted">After dragging {app} into Applications, run this once instead of steps 2–4:</p>
+      <code>xattr -dr com.apple.quarantine /Applications/{app}.app</code>
+    </details>
+
+    <div class="note">
+      <p>
+        <strong>Why this step?</strong> {app} isn’t on the Mac App Store yet. Putting it there, and having Apple notarize
+        it so this warning goes away, costs a yearly Apple Developer fee that this small, independent project can’t
+        cover just yet. It’s coming to the App Store as soon as it can. The app is the same either way.
+      </p>
+    </div>
+
+    <button type="button" class="btn btn-primary done" data-close>Got it</button>
+  </div>
+</dialog>
+
+<style>
+  .mac-install {
+    width: min(640px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--bg);
+    color: var(--body);
+    box-shadow: 0 30px 80px -20px rgba(40, 28, 16, 0.35);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .mac-install::backdrop {
+    background: rgba(25, 20, 15, 0.45);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .mac-install[open] {
+      animation: pop 0.22s var(--ease-out);
+    }
+  }
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+
+  .inner {
+    position: relative;
+    padding: 28px 20px 20px;
+  }
+
+  @media (min-width: 640px) {
+    .inner {
+      padding: 32px 32px 28px;
+    }
+  }
+
+  .close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--body);
+    cursor: pointer;
+  }
+
+  .close:hover {
+    background: var(--band);
+  }
+
+  .eyebrow {
+    margin: 0 0 6px;
+  }
+
+  .mac-install:not([data-mode='download']) [data-when='download'],
+  .mac-install[data-mode='download'] [data-when='help'] {
+    display: none;
+  }
+
+  h2 {
+    font-size: 22px;
+    line-height: 30px;
+    padding-right: 32px;
+  }
+
+  .lead {
+    margin-top: 8px;
+  }
+
+  /* Animated walkthrough */
+  .stage {
+    container-type: inline-size;
+    position: relative;
+    margin-top: 20px;
+    aspect-ratio: 16 / 10;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #e9dcc6, #cdb79a 55%, #a88d6e);
+    font-family: -apple-system, BlinkMacSystemFont, var(--font-ui);
+    color: #1d1d1f;
+    user-select: none;
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.35s,
+      visibility 0.35s;
+  }
+
+  .stage[data-scene='0'] .s1,
+  .stage[data-scene='1'] .s2,
+  .stage[data-scene='2'] .s3,
+  .stage[data-scene='3'] .s4 {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .win {
+    position: absolute;
+    left: 12%;
+    top: 14%;
+    width: 76%;
+    height: 72%;
+    background: #fff;
+    border-radius: 2.2cqi;
+    box-shadow: 0 2cqi 6cqi rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+  }
+
+  .bar {
+    position: relative;
+    height: 7cqi;
+    display: flex;
+    align-items: center;
+    gap: 1.1cqi;
+    padding-left: 2.4cqi;
+    border-bottom: 1px solid #ececec;
+    font-size: 2.4cqi;
+    font-weight: 600;
+  }
+
+  .bar i {
+    width: 1.8cqi;
+    height: 1.8cqi;
+    border-radius: 50%;
+    background: #ff5f57;
+  }
+
+  .bar i:nth-child(2) {
+    background: #febc2e;
+  }
+
+  .bar i:nth-child(3) {
+    background: #28c840;
+  }
+
+  .bar span {
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .app-icon,
+  .folder {
+    width: 14cqi;
+    height: 14cqi;
+    border-radius: 3.2cqi;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-book);
+    font-size: 7cqi;
+    font-weight: 600;
+  }
+
+  .app-icon {
+    position: relative;
+    background: linear-gradient(160deg, #f5ecd9, #e3cfa9);
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px rgba(122, 90, 58, 0.25);
+  }
+
+  .folder {
+    background: linear-gradient(180deg, #6cb6f5, #3a8ee6);
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, var(--font-ui);
+    font-size: 5cqi;
+  }
+
+  .app-icon.small {
+    width: 10cqi;
+    height: 10cqi;
+    margin: 0 auto 2cqi;
+    font-size: 5cqi;
+    border-radius: 2.4cqi;
+  }
+
+  .app-icon b {
+    position: absolute;
+    right: -1.2cqi;
+    bottom: -1.2cqi;
+    width: 4.4cqi;
+    height: 4.4cqi;
+    border-radius: 50%;
+    background: #f5a623;
+    color: #fff;
+    font: 700 3cqi/4.4cqi -apple-system, BlinkMacSystemFont, sans-serif;
+    text-align: center;
+  }
+
+  .dmg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 30%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8cqi;
+  }
+
+  .arrow {
+    width: 10cqi;
+    color: #b8b8b8;
+  }
+
+  .labels {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 74%;
+    display: flex;
+    justify-content: center;
+    gap: 18cqi;
+    font-size: 2.3cqi;
+  }
+
+  .labels span {
+    width: 14cqi;
+    text-align: center;
+  }
+
+  .ghost {
+    position: absolute;
+    left: 11cqi;
+    top: 30%;
+    opacity: 0;
+  }
+
+  /* macOS alert */
+  .alert {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 36cqi;
+    padding: 3.4cqi 3cqi 2.6cqi;
+    transform: translate(-50%, -50%);
+    background: rgba(246, 246, 246, 0.96);
+    border-radius: 3cqi;
+    box-shadow: 0 2cqi 7cqi rgba(0, 0, 0, 0.3);
+    text-align: center;
+  }
+
+  .a-title {
+    font-size: 2.6cqi;
+    line-height: 1.3;
+    font-weight: 700;
+    color: #1d1d1f;
+  }
+
+  .a-body {
+    margin: 1cqi 0 2.4cqi;
+    font-size: 2.1cqi;
+    line-height: 1.35;
+    color: #444;
+  }
+
+  .mbtn {
+    display: block;
+    margin-top: 1.2cqi;
+    padding: 1cqi 2cqi;
+    border-radius: 1.4cqi;
+    background: #e3e3e3;
+    font-size: 2.2cqi;
+    font-weight: 500;
+    color: #1d1d1f;
+    white-space: nowrap;
+  }
+
+  .mbtn.primary {
+    background: #0a7aff;
+    color: #fff;
+  }
+
+  /* System Settings */
+  .settings {
+    left: 7%;
+    top: 9%;
+    width: 86%;
+    height: 82%;
+    display: flex;
+  }
+
+  .side {
+    width: 32%;
+    background: #f1efed;
+    border-right: 1px solid #e2e0dd;
+    font-size: 2.2cqi;
+  }
+
+  .side .bar {
+    border: 0;
+  }
+
+  .side p {
+    margin: 0.6cqi 1.6cqi;
+    padding: 0.9cqi 1.4cqi;
+    border-radius: 1.2cqi;
+  }
+
+  .pane {
+    flex: 1;
+    padding: 2.4cqi 3cqi;
+  }
+
+  .p-title {
+    font-size: 2.8cqi;
+    font-weight: 700;
+  }
+
+  .rows {
+    margin-top: 3cqi;
+  }
+
+  .sec {
+    font-size: 2.2cqi;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 1.2cqi;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 2cqi;
+    padding: 2cqi;
+    border-radius: 1.6cqi;
+    background: #f5f5f7;
+    font-size: 2.1cqi;
+    line-height: 1.35;
+  }
+
+  .row .mbtn {
+    margin: 0;
+    flex: none;
+    background: #fff;
+    box-shadow: 0 0 0 1px #d5d5d5;
+  }
+
+  /* Step 4 */
+  .auth .finger {
+    width: 9cqi;
+    margin: 0 auto 1.6cqi;
+    display: block;
+    color: #e5484d;
+  }
+
+  .auth,
+  .opened {
+    opacity: 0;
+  }
+
+  .opened {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 2cqi;
+    font-size: 2.8cqi;
+    font-weight: 600;
+    color: #2b2016;
+  }
+
+  /* Cursor */
+  .cursor {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3.2cqi;
+    opacity: 0;
+    z-index: 5;
+    filter: drop-shadow(0 0.3cqi 0.4cqi rgba(0, 0, 0, 0.3));
+  }
+
+  .cursor svg {
+    display: block;
+    width: 100%;
+  }
+
+  .ripple {
+    position: absolute;
+    left: -2.4cqi;
+    top: -2.4cqi;
+    width: 5cqi;
+    height: 5cqi;
+    border-radius: 50%;
+    border: 0.5cqi solid rgba(10, 122, 255, 0.8);
+    opacity: 0;
+  }
+
+  /* Static fallback (reduced motion): each scene shows its end state. */
+  @media (prefers-reduced-motion: reduce) {
+    .s3 .pick {
+      background: #0a7aff;
+      color: #fff;
+    }
+    .s3 .target,
+    .s2 .target,
+    .s4 .target {
+      box-shadow: 0 0 0 0.6cqi rgba(10, 122, 255, 0.35);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .stage[data-scene='0'] .s1 .ghost {
+      animation: drag 3.6s var(--ease-out) both;
+    }
+    .stage[data-scene='0'] .s1 .folder {
+      animation: bump 3.6s both;
+    }
+    .stage[data-scene='0'] .cursor {
+      animation: c1 3.6s var(--ease-out) both;
+    }
+    .stage[data-scene='1'] .cursor {
+      animation: c2 3.2s var(--ease-out) both;
+    }
+    .stage[data-scene='1'] .s2 .target {
+      animation: press 3.2s both;
+    }
+    .stage[data-scene='2'] .cursor {
+      animation: c3 4.4s var(--ease-out) both;
+    }
+    .stage[data-scene='2'] .s3 .pick {
+      animation: pick 4.4s both;
+    }
+    .stage[data-scene='2'] .s3 .rows {
+      animation: rows 4.4s both;
+    }
+    .stage[data-scene='2'] .s3 .target {
+      animation: press-late 4.4s both;
+    }
+    .stage[data-scene='3'] .cursor {
+      animation: c4 4.6s var(--ease-out) both;
+    }
+    .stage[data-scene='3'] .s4 .confirm {
+      animation: out-mid 4.6s both;
+    }
+    .stage[data-scene='3'] .s4 .target {
+      animation: press-early 4.6s both;
+    }
+    .stage[data-scene='3'] .s4 .auth {
+      animation: auth 4.6s both;
+    }
+    .stage[data-scene='3'] .s4 .finger {
+      animation: finger 4.6s both;
+    }
+    .stage[data-scene='3'] .s4 .opened {
+      animation: opened 4.6s both;
+    }
+    .stage[data-scene='1'] .ripple {
+      animation: ripple-a 3.2s both;
+    }
+    .stage[data-scene='2'] .ripple {
+      animation: ripple-b 4.4s both;
+    }
+    .stage[data-scene='3'] .ripple {
+      animation: ripple-c 4.6s both;
+    }
+  }
+
+  /* Scene 1: grab the app icon, drag it onto Applications. */
+  @keyframes c1 {
+    0% { opacity: 0; transform: translate(62cqi, 55cqi); }
+    10% { opacity: 1; }
+    28% { transform: translate(30cqi, 29cqi); }
+    70% { transform: translate(70cqi, 29cqi); }
+    85% { opacity: 1; transform: translate(70cqi, 29cqi); }
+    100% { opacity: 0; transform: translate(70cqi, 29cqi); }
+  }
+  @keyframes drag {
+    0%, 28% { opacity: 0; transform: translate(0, 0); }
+    32% { opacity: 0.85; transform: translate(0, -0.5cqi); }
+    70% { opacity: 0.85; transform: translate(40cqi, -0.5cqi) scale(0.9); }
+    76%, 100% { opacity: 0; transform: translate(40cqi, -0.5cqi) scale(0.4); }
+  }
+  @keyframes bump {
+    0%, 70% { transform: none; }
+    76% { transform: scale(1.12); }
+    86%, 100% { transform: none; }
+  }
+
+  /* Scene 2: click Done. */
+  @keyframes c2 {
+    0% { opacity: 0; transform: translate(70cqi, 58cqi); }
+    12% { opacity: 1; }
+    50%, 85% { opacity: 1; transform: translate(50cqi, 42cqi); }
+    100% { opacity: 0; transform: translate(50cqi, 42cqi); }
+  }
+  @keyframes press {
+    0%, 52% { filter: none; transform: none; }
+    56% { filter: brightness(0.8); transform: scale(0.97); }
+    64%, 100% { filter: none; transform: none; }
+  }
+  @keyframes ripple-a {
+    0%, 52% { opacity: 0; transform: scale(0.3); }
+    54% { opacity: 1; }
+    68%, 100% { opacity: 0; transform: scale(1.4); }
+  }
+
+  /* Scene 3: Privacy & Security in the sidebar, then Open Anyway. */
+  @keyframes c3 {
+    0% { opacity: 0; transform: translate(40cqi, 55cqi); }
+    10% { opacity: 1; }
+    28%, 36% { transform: translate(18cqi, 38cqi); }
+    70%, 88% { opacity: 1; transform: translate(78cqi, 26.5cqi); }
+    100% { opacity: 0; transform: translate(78cqi, 26.5cqi); }
+  }
+  @keyframes pick {
+    0%, 29% { background: transparent; color: inherit; }
+    31%, 100% { background: #0a7aff; color: #fff; }
+  }
+  @keyframes rows {
+    0%, 32% { opacity: 0; transform: translateY(1cqi); }
+    40%, 100% { opacity: 1; transform: none; }
+  }
+  @keyframes press-late {
+    0%, 72% { filter: none; transform: none; }
+    75% { filter: brightness(0.85); transform: scale(0.96); }
+    82%, 100% { filter: none; transform: none; }
+  }
+  @keyframes ripple-b {
+    0%, 28% { opacity: 0; transform: scale(0.3); }
+    29% { opacity: 1; }
+    38% { opacity: 0; transform: scale(1.4); }
+    71% { opacity: 0; transform: scale(0.3); }
+    72% { opacity: 1; }
+    84%, 100% { opacity: 0; transform: scale(1.4); }
+  }
+
+  /* Scene 4: Open Anyway, Touch ID, the app opens. */
+  @keyframes c4 {
+    0% { opacity: 0; transform: translate(70cqi, 58cqi); }
+    10% { opacity: 1; }
+    32%, 36% { opacity: 1; transform: translate(50cqi, 39.5cqi); }
+    42%, 100% { opacity: 0; transform: translate(50cqi, 39.5cqi); }
+  }
+  @keyframes press-early {
+    0%, 32% { filter: none; transform: none; }
+    35% { filter: brightness(0.8); transform: scale(0.97); }
+    40%, 100% { filter: none; transform: none; }
+  }
+  @keyframes ripple-c {
+    0%, 32% { opacity: 0; transform: scale(0.3); }
+    33% { opacity: 1; }
+    44%, 100% { opacity: 0; transform: scale(1.4); }
+  }
+  @keyframes out-mid {
+    0%, 38% { opacity: 1; }
+    44%, 100% { opacity: 0; }
+  }
+  @keyframes auth {
+    0%, 42% { opacity: 0; }
+    48%, 70% { opacity: 1; }
+    76%, 100% { opacity: 0; }
+  }
+  @keyframes finger {
+    0%, 52% { color: #e5484d; }
+    60%, 100% { color: #28a745; }
+  }
+  @keyframes opened {
+    0%, 74% { opacity: 0; transform: scale(0.94); }
+    82%, 100% { opacity: 1; transform: none; }
+  }
+
+  /* Steps */
+  .steps {
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .steps button {
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    font: inherit;
+    font-size: 15px;
+    line-height: 22px;
+    color: var(--body);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .steps button:hover {
+    background: var(--band);
+  }
+
+  .steps button[aria-pressed='true'] {
+    background: var(--band);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink);
+  }
+
+  .steps strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .num {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-top: -1px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px currentColor;
+  }
+
+  [aria-pressed='true'] .num {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .tip {
+    margin-top: 12px;
+  }
+
+  .terminal {
+    margin-top: 12px;
+  }
+
+  .terminal summary {
+    cursor: pointer;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .terminal p {
+    margin-top: 8px;
+  }
+
+  .terminal code {
+    display: block;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #1d1d1f;
+    color: #f5f5f7;
+    font: 13px/20px ui-monospace, SFMono-Regular, Menlo, monospace;
+    overflow-x: auto;
+    white-space: nowrap;
+    user-select: all;
+  }
+
+  .note {
+    margin-top: 20px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--paper);
+    color: var(--paper-ink);
+    font-size: 15px;
+    line-height: 23px;
+  }
+
+  .note strong {
+    color: var(--paper-ink);
+  }
+
+  .done {
+    margin-top: 20px;
+    width: 100%;
+  }
+</style>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('dialog.mac-install');
+  if (dialog) {
+    const stage = dialog.querySelector<HTMLElement>('.stage')!;
+    const buttons = [...dialog.querySelectorAll<HTMLButtonElement>('[data-step]')];
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    // How long each scene's animation runs (matches the CSS) plus a pause to read it.
+    const durations = [3600, 3200, 4400, 4600].map((d) => d + 900);
+    let scene = 0;
+    let timer: number | undefined;
+
+    const go = (n: number, auto = true) => {
+      scene = (n + buttons.length) % buttons.length;
+      // Re-setting the attribute after a reflow restarts the CSS animations.
+      stage.dataset.scene = '';
+      void stage.offsetWidth;
+      stage.dataset.scene = String(scene);
+      buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(i === scene)));
+      clearTimeout(timer);
+      if (auto && !reduced.matches && dialog.open) timer = window.setTimeout(() => go(scene + 1), durations[scene]);
+    };
+
+    buttons.forEach((b, i) => b.addEventListener('click', () => go(i)));
+    dialog.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => dialog.close()));
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => clearTimeout(timer));
+
+    // A download link keeps its default action (the download starts) and opens the guide beside it.
+    document.querySelectorAll<HTMLElement>('[data-mac-install]').forEach((el) =>
+      el.addEventListener('click', (e) => {
+        const isDownload = el instanceof HTMLAnchorElement;
+        if (!isDownload) e.preventDefault();
+        dialog.dataset.mode = isDownload ? 'download' : 'help';
+        if (!dialog.open) dialog.showModal();
+        dialog.scrollTop = 0;
+        go(0);
+      }),
+    );
+  }
+</script>

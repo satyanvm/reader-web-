@@ -50,7 +50,7 @@ const check =
         <ul>
           {sync.features.map((f) => <li><Fragment set:html={check} />{f}</li>)}
         </ul>
-        <a class="btn btn-primary" href="#download">Get {sync.name}</a>
+        <a class="btn btn-primary" href="/account?upgrade=monthly" data-upgrade>Get {sync.name}</a>
       </article>
     </div>
 
@@ -228,6 +228,7 @@ const check =
         amount.textContent = yearly ? card.dataset.yearly! : card.dataset.monthly!;
         per.textContent = yearly ? ' / year' : ' / month';
         alt.textContent = yearly ? `${card.dataset.monthly} / month if billed monthly` : monthlyAlt;
+        card.querySelector<HTMLAnchorElement>('[data-upgrade]')!.href = `/account?upgrade=${yearly ? 'yearly' : 'monthly'}`;
       }),
     );
   }

@@ -48,9 +48,14 @@ const icons: Record<string, string> = {
               <div class="action">
                 {p.available ? (
                   <>
-                    <a class="btn btn-primary" href={p.url}>
+                    <a class="btn btn-primary" href={p.url} data-mac-install={p.id === 'mac' ? '' : undefined}>
                       {p.label}
                     </a>
+                    {p.id === 'mac' && (
+                      <button type="button" class="alt small link-btn" data-mac-install>
+                        How to open it on your Mac
+                      </button>
+                    )}
                     {p.alt && (
                       <a class="alt small" href={p.alt.url}>
                         {p.alt.label}

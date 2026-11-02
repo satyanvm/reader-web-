@@ -26,6 +26,7 @@ const variants = site.platforms.map((p) => ({
               class={`btn ${v.available ? 'btn-primary' : 'btn-secondary'} cta-variant`}
               data-for={v.id}
               href={v.href}
+              data-mac-install={v.id === 'mac' && v.available ? '' : undefined}
             >
               {v.label}
             </a>

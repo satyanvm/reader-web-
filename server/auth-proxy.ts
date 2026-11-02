@@ -26,6 +26,9 @@ const ROUTES = new Map<string, RouteKind>([
   ['POST /v1/auth/google', 'public'],
   ['GET /v1/auth/providers', 'public'],
   ['GET /v1/me', 'session'],
+  ['POST /v1/auth/app/code', 'session'],
+  ['GET /v1/billing', 'session'],
+  ['POST /v1/billing/checkout', 'session'],
   ['POST /v1/auth/signout', 'signout'],
 ]);
 
