@@ -42,6 +42,10 @@ readserene.site is the `readserene` Cloudflare Worker, configured in `wrangler.j
 
 `functions/` holds the same handlers as Cloudflare Pages Functions, in case the site moves to Pages.
 
+### Cloudflare Workers Builds
+
+The `readserene` Worker in the Cloudflare dashboard can also build from Git with `npm run build` and deploy with `npx wrangler deploy`, which reads `wrangler.jsonc`. A Git deploy doesn't run the launch check, so run it yourself first. Set `SYNC_API_ORIGIN` under the Worker's variables to override the sync server.
+
 `public/_headers` sets long cache lifetimes for fonts and hashed assets, and security headers (HSTS, no framing, a restrictive Permissions-Policy). Each page also carries a hash-based Content-Security-Policy that Astro generates, so the site loads nothing from other origins. If you add an external script, style or image, add its origin to `security.csp` in `astro.config.ts`. The Worker serves `privacy.html` at `/privacy` and uses `404.html` for unknown paths.
 
 ## Accounts and sign-in
