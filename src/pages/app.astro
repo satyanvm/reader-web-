@@ -1,0 +1,121 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../site.config';
+---
+
+<Base title={`Sign in to the app · ${site.name}`} description={`Sign in to the ${site.name} app.`} path="/app" noindex>
+  <section class="auth">
+    <div class="container">
+      <div class="auth-card" data-auth-page="app">
+        <h1 tabindex="-1">Sign in to the app</h1>
+        <p class="lead" data-state="loading" role="status">One moment…</p>
+
+        <div class="panel" data-state="missing" hidden>
+          <p>This page signs in the {site.name} app on your computer. Open it from the app: Settings, then Sign In.</p>
+          <a class="btn btn-secondary btn-block" href="/account">Your account</a>
+        </div>
+
+        <div class="panel" data-state="ready" hidden>
+          <div class="account-row">
+            <p class="hint">Signed in as</p>
+            <p class="account-email" data-email-out></p>
+          </div>
+          <p>Continue to sign in the {site.name} app on this computer with this account.</p>
+          <p class="form-error" role="alert" hidden></p>
+          <button type="button" class="btn btn-primary btn-block" data-continue>Continue to the app</button>
+          <button type="button" class="btn btn-secondary btn-block" data-switch>Use a different account</button>
+        </div>
+
+        <div class="panel" data-state="done" hidden>
+          <p>You’re signed in. Return to the {site.name} app; you can close this tab.</p>
+          <a class="btn btn-secondary btn-block" data-open-app href="#">Open {site.name}</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .account-row {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--band);
+  }
+  .account-email {
+    color: var(--ink);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+</style>
+
+<script>
+  import { api, busy, clearError, showError } from '../scripts/auth';
+  import { site } from '../site.config';
+
+  // The app opens /app?challenge=…&state=…&mode=signin|signup (see the sync server's auth.js,
+  // createAppCode). They're kept in sessionStorage while the person signs in or signs up, then
+  // exchanged for a one-time code that goes back to the app in a readserene:// link.
+  const KEY = 'rs_app_handoff';
+  const PKCE = /^[A-Za-z0-9_-]{43,128}$/;
+  const STATE = /^[A-Za-z0-9_-]{16,128}$/;
+
+  type Handoff = { challenge: string; state: string; mode: 'signin' | 'signup' };
+
+  const root = document.querySelector<HTMLElement>('[data-auth-page="app"]')!;
+  const ready = root.querySelector<HTMLElement>('[data-state="ready"]')!;
+  const show = (state: string) =>
+    root.querySelectorAll<HTMLElement>('[data-state]').forEach((el) => (el.hidden = el.dataset.state !== state));
+
+  function handoff(): Handoff | null {
+    const params = new URLSearchParams(location.search);
+    const challenge = params.get('challenge') ?? '';
+    const state = params.get('state') ?? '';
+    try {
+      if (PKCE.test(challenge) && STATE.test(state)) {
+        const mode = params.get('mode') === 'signup' ? 'signup' : 'signin';
+        sessionStorage.setItem(KEY, JSON.stringify({ challenge, state, mode }));
+        history.replaceState(null, '', '/app');
+      }
+      const v = JSON.parse(sessionStorage.getItem(KEY) ?? 'null');
+      return v && PKCE.test(v.challenge) && STATE.test(v.state) ? v : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function load() {
+    const h = handoff();
+    if (!h) return show('missing');
+    const me = await api<{ email?: string }>('/v1/me');
+    if (me.status === 401) return location.replace(`/${h.mode}?next=/app`);
+    if (!me.ok) {
+      showError(ready, me.data.error);
+      ready.querySelector<HTMLButtonElement>('[data-continue]')!.disabled = true;
+    }
+    root.querySelector('[data-email-out]')!.textContent = me.data.email ?? '';
+    show('ready');
+
+    root.querySelector<HTMLButtonElement>('[data-continue]')!.addEventListener('click', async (e) => {
+      clearError(ready);
+      const r = await busy(e.currentTarget as HTMLButtonElement, () => api<{ code?: string }>('/v1/auth/app/code', { challenge: h.challenge }));
+      if (!r.ok || !r.data.code) return showError(ready, r.data.error);
+      try {
+        sessionStorage.removeItem(KEY);
+      } catch {
+        /* ignore */
+      }
+      const link = `${site.auth.appScheme}://auth?${new URLSearchParams({ code: r.data.code, state: h.state })}`;
+      root.querySelector<HTMLAnchorElement>('[data-open-app]')!.href = link;
+      show('done');
+      location.href = link;
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-switch]')!.addEventListener('click', async (e) => {
+      await busy(e.currentTarget as HTMLButtonElement, () => api('/v1/auth/signout', {}));
+      location.replace(`/${h.mode}?next=/app`);
+    });
+  }
+
+  load();
+</script>

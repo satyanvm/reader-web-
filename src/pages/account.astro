@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
-import { site } from '../site.config';
+import { site, formatPrice } from '../site.config';
+const { sync } = site.pricing;
 ---
 
 <Base title={`Your account · ${site.name}`} description={`Your ${site.name} account.`} path="/account" noindex>
@@ -19,6 +20,21 @@ import { site } from '../site.config';
           <div class="account-row">
             <p class="hint">Signed in as</p>
             <p class="account-email" data-email-out></p>
+          </div>
+          <div class="plan-box" data-plan>
+            <p class="hint">Plan</p>
+            <p class="plan-name" data-plan-name>Free</p>
+            <p class="hint" data-plan-detail hidden></p>
+            <p class="form-error" role="alert" data-plan-error hidden></p>
+            <div class="plan-actions" data-buy hidden>
+              <button type="button" class="btn btn-primary btn-block" data-checkout="monthly">
+                Get {sync.name}, {formatPrice(sync.monthly)} / month
+              </button>
+              <button type="button" class="btn btn-secondary btn-block" data-checkout="yearly">
+                {formatPrice(sync.yearly)} / year
+              </button>
+            </div>
+            <a class="btn btn-secondary btn-block" data-manage hidden>Manage subscription</a>
           </div>
           <p>
             Sign in with this account in the {site.name} app on each of your devices. Your library and reading positions
@@ -42,6 +58,26 @@ import { site } from '../site.config';
     border-radius: var(--radius);
     background: var(--band);
   }
+  .plan-box {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .plan-name {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .plan-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .plan-actions[hidden],
+  [data-manage][hidden] {
+    display: none;
+  }
   .account-email {
     color: var(--ink);
     font-weight: 500;
@@ -51,22 +87,98 @@ import { site } from '../site.config';
 
 <script>
   import { api, busy } from '../scripts/auth';
+  import { site } from '../site.config';
 
   const root = document.querySelector<HTMLElement>('[data-auth-page="account"]')!;
   const show = (state: string) =>
     root.querySelectorAll<HTMLElement>('[data-state]').forEach((el) => (el.hidden = el.dataset.state !== state));
 
+  interface Billing {
+    pro: boolean;
+    plan: string | null;
+    status: string | null;
+    renewsAt: number | null;
+    endsAt: number | null;
+    manageUrl: string | null;
+    plans: string[];
+  }
+
+  const $ = <T extends HTMLElement = HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+  const planError = (msg: string) => {
+    const el = $('[data-plan-error]');
+    el.textContent = msg;
+    el.hidden = false;
+  };
+  const date = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+
+  async function checkout(plan: string, button?: HTMLButtonElement) {
+    $('[data-plan-error]').hidden = true;
+    const r = await busy(button ?? null, () => api<{ url?: string }>('/v1/billing/checkout', { plan }));
+    if (r.ok && r.data.url) return location.assign(r.data.url);
+    planError(
+      r.data.code === 'billing_unavailable'
+        ? 'Pro isn’t on sale just yet. Please check back soon.'
+        : (r.data.error ?? 'Couldn’t start checkout. Try again in a moment.'),
+    );
+  }
+
+  // Shows the plan, or hides the box if billing can't be read.
+  async function loadBilling(): Promise<Billing | null> {
+    const r = await api<Billing>('/v1/billing');
+    if (!r.ok) {
+      $('[data-plan]').hidden = true;
+      return null;
+    }
+    const b = r.data;
+    const detail = $('[data-plan-detail]');
+    $('[data-plan-name]').textContent = b.pro ? `${site.name} Pro${b.plan ? ` (${b.plan})` : ''}` : 'Free';
+    const line =
+      b.pro && b.status === 'cancelled' && b.endsAt
+        ? `Cancelled. Pro stays on until ${date(b.endsAt)}.`
+        : b.pro && (b.status === 'past_due' || b.status === 'pending')
+          ? 'Your last payment didn’t go through. Update your card to keep Pro.'
+          : b.pro && b.renewsAt
+            ? `Renews on ${date(b.renewsAt)}.`
+            : b.pro
+              ? ''
+              : 'Sync your library and reading position across all your devices with Pro.';
+    detail.textContent = line;
+    detail.hidden = !line;
+    const manage = $<HTMLAnchorElement>('[data-manage]');
+    if (b.manageUrl) manage.href = b.manageUrl;
+    manage.hidden = !b.manageUrl;
+    $('[data-buy]').hidden = b.pro || b.plans.length === 0;
+    root.querySelectorAll<HTMLButtonElement>('[data-checkout]').forEach((btn) => (btn.hidden = !b.plans.includes(btn.dataset.checkout!)));
+    return b;
+  }
+
   async function load() {
     show('loading');
     const r = await api<{ email?: string }>('/v1/me');
-    if (r.status === 401) return location.replace('/signin?next=/account');
+    if (r.status === 401) return location.replace(`/signin?next=${encodeURIComponent(location.pathname + location.search)}`);
     if (!r.ok) {
       root.querySelector('[data-state="error"] .form-error')!.textContent = r.data.error ?? 'Couldn’t load your account.';
       return show('error');
     }
     root.querySelector('[data-email-out]')!.textContent = r.data.email ?? '';
+    const billing = await loadBilling();
     show('ready');
+
+    // Arrived from a "Get Pro" button: go straight on to checkout.
+    const params = new URLSearchParams(location.search);
+    const upgrade = params.get('upgrade');
+    if (upgrade) {
+      history.replaceState(null, '', location.pathname);
+      if (billing && !billing.pro) {
+        if (billing.plans.includes(upgrade)) await checkout(upgrade);
+        else planError('Pro isn’t on sale just yet. Please check back soon.');
+      }
+    }
   }
+
+  root.querySelectorAll<HTMLButtonElement>('[data-checkout]').forEach((btn) =>
+    btn.addEventListener('click', () => checkout(btn.dataset.checkout!, btn)),
+  );
 
   root.querySelector('[data-retry]')?.addEventListener('click', load);
   root.querySelector<HTMLButtonElement>('[data-signout]')?.addEventListener('click', async (e) => {

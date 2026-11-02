@@ -32,31 +32,31 @@ npm run check:launch
 
 This lists every placeholder that would ship: `example.com` links and emails, values marked `// TODO`, `pricingIsPlaceholder: true`, and the template notices on the privacy and terms pages. It exits with an error until the list is empty. Links for platforms marked `available: false` are skipped, because those buttons aren't shown yet. CI runs it on every website change and prints the list without failing.
 
-## Deploy to Cloudflare Pages
+## Deploy to Cloudflare
 
 ```bash
 npm run deploy
 ```
 
-`npm run deploy` runs the launch check, builds, and uploads `dist/` with `npx wrangler pages deploy dist --project-name readserene`. The first deploy asks you to sign in to Cloudflare and creates the `readserene` project. To change the project name, edit the `deploy` script in `package.json`.
+readserene.site is the `readserene` Cloudflare Worker, configured in `wrangler.jsonc`. It serves `dist/` as static assets, and runs `server/worker.ts` first for `/api/*` (the account proxy) and `/download/*` (app builds). `npm run deploy` runs the launch check, builds, and runs `npx wrangler deploy`. Wrangler must be signed in to the Cloudflare account that owns readserene.site (`npx wrangler whoami` shows which one).
+
+`functions/` holds the same handlers as Cloudflare Pages Functions, in case the site moves to Pages.
 
 ### Cloudflare Workers Builds
 
-The `readserene` Worker in the Cloudflare dashboard builds from Git with `npm run build` and deploys with `npx wrangler deploy`, which reads `wrangler.jsonc`. It serves `dist/` as static assets (including `_headers` and `404.html`) and runs `server/worker.ts` only for `/api/*`, the same account proxy as the Pages Function. Set `SYNC_API_ORIGIN` under the Worker's variables to override the sync server.
+The `readserene` Worker in the Cloudflare dashboard can also build from Git with `npm run build` and deploy with `npx wrangler deploy`, which reads `wrangler.jsonc`. A Git deploy doesn't run the launch check, so run it yourself first. Set `SYNC_API_ORIGIN` under the Worker's variables to override the sync server.
 
-To deploy from Git instead, connect the repository in the Cloudflare dashboard with the build command `npm run build` and output directory `dist`. The `.nvmrc` file tells Pages to build with Node 22. A Git deploy doesn't run the launch check, so run it yourself first.
-
-After the first deploy, add your custom domain under the project's Custom domains tab, and set the same domain as `url` in `src/site.config.ts`.
-
-`public/_headers` sets long cache lifetimes for fonts and hashed assets, and security headers (HSTS, no framing, a restrictive Permissions-Policy). Each page also carries a hash-based Content-Security-Policy that Astro generates, so the site loads nothing from other origins. If you add an external script, style or image, add its origin to `security.csp` in `astro.config.ts`. Cloudflare Pages serves `privacy.html` at `/privacy` and uses `404.html` for unknown paths.
+`public/_headers` sets long cache lifetimes for fonts and hashed assets, and security headers (HSTS, no framing, a restrictive Permissions-Policy). Each page also carries a hash-based Content-Security-Policy that Astro generates, so the site loads nothing from other origins. If you add an external script, style or image, add its origin to `security.csp` in `astro.config.ts`. The Worker serves `privacy.html` at `/privacy` and uses `404.html` for unknown paths.
 
 ## Accounts and sign-in
 
 The site signs people in to the same accounts as the apps. Accounts live on the sync server (`server/` in the reader-android repository). The pages are `/signin`, `/signup`, `/reset`, `/account` and `/auth/google` (the Google callback).
 
+The Mac app signs in here too: it opens `/app?challenge=…&state=…&mode=signin|signup`. The page sends the visitor through `/signin` or `/signup` if needed, asks them to confirm the account, gets a one-time code bound to the app's challenge (`POST /v1/auth/app/code`), and hands it back in a `readserene://auth?code=…&state=…` link. The app trades the code and its secret verifier for its own session (`POST /v1/auth/app/token`, PKCE), so no session token passes through the link.
+
 The sync server sends no CORS headers and issues bearer tokens, so the browser never talks to it directly. Requests go to `/api/*` on the site's own origin:
 
-- **In production**, `functions/api/[[path]].ts` (a Cloudflare Pages Function) handles `/api/*`.
+- **In production**, the Worker (`server/worker.ts`) handles `/api/*`.
 - **In development**, `astro dev` and `astro preview` serve the same code from `server/auth-proxy.ts`.
 
 The proxy:
@@ -68,7 +68,7 @@ The proxy:
 
 Signing out ends the session on the server too.
 
-The sync server's address is `auth.apiOrigin` in `src/site.config.ts`. To point a deployment somewhere else, set the `SYNC_API_ORIGIN` environment variable in the Pages project settings.
+The sync server's address is `auth.apiOrigin` in `src/site.config.ts`. To point a deployment somewhere else, set the `SYNC_API_ORIGIN` variable on the Worker (`vars` in `wrangler.jsonc`).
 
 To develop against a local sync server, run it from the reader-android repository (`cd server && npm start`), then start this site with:
 
@@ -111,8 +111,11 @@ src/layouts/Base.astro   <head>, SEO tags, platform detection, scroll reveal
 src/components/          Header, Hero, SyncStrip, Features, ReadingDemo, Pricing, Download, Faq, Footer
 src/pages/               index, privacy, terms, 404, account pages, sitemap.xml, robots.txt
 src/scripts/auth.ts      client side of the account pages
-server/auth-proxy.ts     /api proxy to the sync server (used by the Pages Function and dev server)
-functions/api/           Cloudflare Pages Function for /api/*
+server/worker.ts         Cloudflare Worker entry: /api/*, /download/*, then static assets
+server/auth-proxy.ts     /api proxy to the sync server (used by the Worker and dev server)
+server/downloads.ts      /download/* app builds, streamed from GitHub Releases
+wrangler.jsonc           Worker config and the readserene.site custom domains
+functions/               the same handlers as Cloudflare Pages Functions
 src/styles/global.css    design tokens and shared styles
 public/fonts/            self-hosted Inter and Literata (latin subset)
 scripts/generate-images.mjs  og.png and favicon PNGs

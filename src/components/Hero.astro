@@ -28,6 +28,7 @@ const variants = site.platforms.map((p) => ({
               data-for={v.id}
               data-install-for={v.installFor}
               href={v.href}
+              data-mac-install={v.id === 'mac' && v.available ? '' : undefined}
             >
               {v.label}
             </a>
